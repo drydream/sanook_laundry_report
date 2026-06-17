@@ -59,8 +59,8 @@ export default function LandingPage() {
         }
       `}</style>
 
-      <div className="h-screen overflow-hidden relative flex flex-col items-center justify-center"
-        style={{ backgroundImage: 'url(/bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
+      <div className="h-screen w-screen overflow-hidden relative flex flex-col items-center justify-center"
+        style={{ backgroundImage: 'url(/bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center top' }}>
 
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/55" />
