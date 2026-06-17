@@ -64,7 +64,7 @@ async function callCrud(payload) {
 }
 
 function fetchCommonFund() {
-  return fetchSheet('เงินส่วนกลาง', ['DATETIME', 'DATE', 'เงินเข้า', 'ยอดรวม', 'รายการจ่าย', 'ยอดจ่าย']);
+  return fetchSheet('เงินส่วนกลาง', ['DATETIME', 'DATE', 'เงินเข้า', 'ยอดรวม', 'รายการจ่าย', 'ยอดจ่าย', 'Note']);
 }
 
 function fetchMachineCash() {
@@ -126,7 +126,7 @@ export default function Home() {
 
   function openAdd() {
     setModal({ sheet: 'commonFund', mode: 'add', row: null,
-      form: { date: todayStr(), moneyIn: '', description: '', moneyOut: '' } });
+      form: { date: todayStr(), moneyIn: '', description: '', moneyOut: '', note: '' } });
   }
 
   function openEdit(r) {
@@ -136,6 +136,7 @@ export default function Home() {
         moneyIn: String(r['เงินเข้า'] || ''),
         description: String(r['รายการจ่าย'] || ''),
         moneyOut: String(r['ยอดจ่าย'] || ''),
+        note: String(r['Note'] || ''),
       } });
   }
 
@@ -168,7 +169,7 @@ export default function Home() {
           ...(mode === 'edit' && { row }) };
       } else {
         payload = { action: mode === 'add' ? 'add' : 'edit',
-          date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut,
+          date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut, note: form.note || '',
           ...(mode === 'edit' && { row }) };
       }
       const result = await callCrud(payload);
@@ -283,6 +284,12 @@ export default function Home() {
                         .toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
                     </p>
                   </div>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">บันทึก</span>
+                    <input type="text" value={modal.form.note || ''} placeholder="—"
+                      onChange={e => setModal(m => ({ ...m, form: { ...m.form, note: e.target.value } }))}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                  </label>
                 </>
               )}
             </div>
@@ -534,6 +541,7 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
                     <div className="min-w-0">
                       <p className="text-xs text-gray-400">{r['DATE']}</p>
                       <p className="text-sm text-gray-700 truncate">{r['รายการจ่าย'] || '—'}</p>
+                      {r['Note'] ? <p className="text-xs text-gray-400 truncate">{r['Note']}</p> : null}
                       {parseFloat(r['เงินเข้า'] || 0) > 0 && (
                         <p className="text-xs text-emerald-600">รับเข้า {parseFloat(r['เงินเข้า']).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</p>
                       )}
@@ -563,7 +571,7 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
               <table className="w-full text-sm">
                 <thead className="bg-gray-50 text-gray-400 text-xs">
                   <tr>
-                    {['วันที่', 'เงินเข้า (฿)', 'รายการจ่าย', 'ยอดจ่าย (฿)', 'ยอดรวม (฿)', ''].map(h => (
+                    {['วันที่', 'เงินเข้า (฿)', 'รายการจ่าย', 'ยอดจ่าย (฿)', 'ยอดรวม (฿)', 'บันทึก', ''].map(h => (
                       <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                     ))}
                   </tr>
@@ -588,6 +596,7 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
                         <td className={`px-4 py-3 font-bold whitespace-nowrap ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                           {net.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                         </td>
+                        <td className="px-4 py-3 text-gray-400 text-sm">{r['Note'] || '—'}</td>
                         <td className="px-2 py-3 whitespace-nowrap">
                           <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="แก้ไข">✏</button>
                           <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="ลบ">🗑</button>
@@ -602,6 +611,7 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
                     <td className={`px-4 py-3 font-bold whitespace-nowrap ${periodTotal >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
                       {periodTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                     </td>
+                    <td />
                     <td />
                   </tr>
                 </tfoot>
