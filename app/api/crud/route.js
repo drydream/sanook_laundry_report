@@ -16,6 +16,7 @@ export async function POST(request) {
     hundred: String(body.hundred ?? ''),
     fifty: String(body.fifty ?? ''),
     twenty: String(body.twenty ?? ''),
+    total: String(body.total ?? ''),
     note: body.note || '',
     row: String(body.row ?? ''),
   });

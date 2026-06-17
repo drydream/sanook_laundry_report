@@ -141,7 +141,7 @@ export default function Home() {
 
   function openMachineAdd() {
     setModal({ sheet: 'machineCash', mode: 'add', row: null,
-      form: { date: todayStr(), hundred: '', fifty: '', twenty: '', note: '' } });
+      form: { date: todayStr(), hundred: '', fifty: '', twenty: '', total: '', note: '' } });
   }
 
   function openMachineEdit(r) {
@@ -151,6 +151,7 @@ export default function Home() {
         hundred: String(r['100 บาท'] || ''),
         fifty: String(r['50 บาท'] || ''),
         twenty: String(r['20 บาท'] || ''),
+        total: String(r['รวม'] || ''),
         note: String(r['Note'] || ''),
       } });
   }
@@ -162,7 +163,8 @@ export default function Home() {
       let payload;
       if (sheet === 'machineCash') {
         payload = { action: mode === 'add' ? 'add' : 'edit', sheet: 'machineCash',
-          date: form.date, hundred: form.hundred, fifty: form.fifty, twenty: form.twenty, note: form.note || '',
+          date: form.date, hundred: form.hundred, fifty: form.fifty, twenty: form.twenty,
+          total: form.total, note: form.note || '',
           ...(mode === 'edit' && { row }) };
       } else {
         payload = { action: mode === 'add' ? 'add' : 'edit',
@@ -230,17 +232,20 @@ export default function Home() {
                     <label key={key} className="flex flex-col gap-1">
                       <span className="text-xs text-gray-500">{label}</span>
                       <input type="number" min="0" value={modal.form[key] || ''} placeholder="0"
-                        onChange={e => setModal(m => ({ ...m, form: { ...m.form, [key]: e.target.value } }))}
+                        onChange={e => setModal(m => {
+                          const updated = { ...m.form, [key]: e.target.value };
+                          const auto = (parseFloat(updated.hundred)||0) + (parseFloat(updated.fifty)||0) + (parseFloat(updated.twenty)||0);
+                          return { ...m, form: { ...updated, total: auto ? String(auto) : '' } };
+                        })}
                         className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
                     </label>
                   ))}
-                  <div className="flex flex-col gap-1">
-                    <span className="text-xs text-gray-500">รวม (คำนวณอัตโนมัติ)</span>
-                    <p className="text-sm font-bold px-3 py-2 bg-gray-50 rounded-lg text-purple-600">
-                      {((parseFloat(modal.form.hundred)||0)+(parseFloat(modal.form.fifty)||0)+(parseFloat(modal.form.twenty)||0))
-                        .toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
-                    </p>
-                  </div>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">รวม (฿)</span>
+                    <input type="number" min="0" value={modal.form.total || ''} placeholder="0"
+                      onChange={e => setModal(m => ({ ...m, form: { ...m.form, total: e.target.value } }))}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm font-bold text-purple-600 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                  </label>
                   <label className="flex flex-col gap-1">
                     <span className="text-xs text-gray-500">บันทึก</span>
                     <input type="text" value={modal.form.note || ''} placeholder="—"
