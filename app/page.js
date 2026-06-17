@@ -319,72 +319,108 @@ function StatCard({ label, value, color, sub }) {
 function PaymentTable({ rows }) {
   if (!rows.length) return <Empty />;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-400 text-xs">
-          <tr>
-            <th className="px-4 py-3 text-left font-medium">วันที่</th>
-            <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">เวลา</th>
-            <th className="px-4 py-3 text-left font-medium">ธนาคาร</th>
-            <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">ผู้รับ</th>
-            <th className="px-4 py-3 text-left font-medium">จำนวน (฿)</th>
-            <th className="px-4 py-3 text-left font-medium">ประเภท</th>
-            <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">บันทึก</th>
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {rows.map((r, i) => (
-            <tr key={i} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['Date']}</td>
-              <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{r['Time']}</td>
-              <td className="px-4 py-3 font-medium">{r['Bank Name']}</td>
-              <td className="px-4 py-3 hidden sm:table-cell">{r['Receiver Name']}</td>
-              <td className="px-4 py-3 font-semibold text-green-600 whitespace-nowrap">
-                {parseFloat(r['Amount'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-              </td>
-              <td className="px-4 py-3 whitespace-nowrap">
-                <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
-                  r['Type'] === 'bill_payment' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
-                }`}>
-                  {r['Type'] === 'bill_payment' ? 'จ่ายบิล' : 'โอนเงิน'}
-                </span>
-              </td>
-              <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{r['Note']}</td>
+    <>
+      <div className="divide-y divide-gray-100 sm:hidden">
+        {rows.map((r, i) => (
+          <div key={i} className="px-4 py-3 flex justify-between items-start gap-3">
+            <div className="min-w-0">
+              <p className="text-xs text-gray-400">{r['Date']} · {r['Time']}</p>
+              <p className="text-sm font-medium text-gray-800 truncate">{r['Bank Name']}</p>
+              <p className="text-xs text-gray-400 truncate">{r['Receiver Name']}</p>
+            </div>
+            <div className="text-right shrink-0">
+              <p className="text-sm font-semibold text-green-600 whitespace-nowrap">
+                {parseFloat(r['Amount'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+              </p>
+              <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${
+                r['Type'] === 'bill_payment' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
+              }`}>
+                {r['Type'] === 'bill_payment' ? 'จ่ายบิล' : 'โอนเงิน'}
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-400 text-xs">
+            <tr>
+              {['วันที่', 'เวลา', 'ธนาคาร', 'ผู้รับ', 'จำนวน (฿)', 'ประเภท', 'บันทึก'].map(h => (
+                <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {rows.map((r, i) => (
+              <tr key={i} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['Date']}</td>
+                <td className="px-4 py-3 text-gray-500">{r['Time']}</td>
+                <td className="px-4 py-3 font-medium">{r['Bank Name']}</td>
+                <td className="px-4 py-3">{r['Receiver Name']}</td>
+                <td className="px-4 py-3 font-semibold text-green-600 whitespace-nowrap">
+                  {parseFloat(r['Amount'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                    r['Type'] === 'bill_payment' ? 'bg-blue-100 text-blue-600' : 'bg-green-100 text-green-600'
+                  }`}>
+                    {r['Type'] === 'bill_payment' ? 'จ่ายบิล' : 'โอนเงิน'}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-400">{r['Note']}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
 function CashTable({ rows }) {
   if (!rows.length) return <Empty />;
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full min-w-[420px] text-sm">
-        <thead className="bg-gray-50 text-gray-400 text-xs">
-          <tr>
-            {['วันที่', '100 บาท', '50 บาท', '20 บาท', 'รวม (฿)'].map(h => (
-              <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {rows.map((r, i) => (
-            <tr key={i} className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['Date']}</td>
-              <td className="px-4 py-3">{Number(r['100 บาท'] || 0).toLocaleString('th-TH')}</td>
-              <td className="px-4 py-3">{Number(r['50 บาท'] || 0).toLocaleString('th-TH')}</td>
-              <td className="px-4 py-3">{Number(r['20 บาท'] || 0).toLocaleString('th-TH')}</td>
-              <td className="px-4 py-3 font-semibold text-purple-600 whitespace-nowrap">
-                {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-              </td>
+    <>
+      <div className="divide-y divide-gray-100 sm:hidden">
+        {rows.map((r, i) => (
+          <div key={i} className="px-4 py-3 flex justify-between items-center gap-3">
+            <p className="text-sm text-gray-500">{r['Date']}</p>
+            <div className="text-right">
+              <p className="text-sm font-semibold text-purple-600 whitespace-nowrap">
+                {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+              </p>
+              <p className="text-xs text-gray-400 whitespace-nowrap">
+                100฿ {Number(r['100 บาท']||0).toLocaleString()} · 50฿ {Number(r['50 บาท']||0).toLocaleString()} · 20฿ {Number(r['20 บาท']||0).toLocaleString()}
+              </p>
+            </div>
+          </div>
+        ))}
+      </div>
+      <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead className="bg-gray-50 text-gray-400 text-xs">
+            <tr>
+              {['วันที่', '100 บาท', '50 บาท', '20 บาท', 'รวม (฿)'].map(h => (
+                <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+              ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="divide-y divide-gray-50">
+            {rows.map((r, i) => (
+              <tr key={i} className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['Date']}</td>
+                <td className="px-4 py-3">{Number(r['100 บาท'] || 0).toLocaleString('th-TH')}</td>
+                <td className="px-4 py-3">{Number(r['50 บาท'] || 0).toLocaleString('th-TH')}</td>
+                <td className="px-4 py-3">{Number(r['20 บาท'] || 0).toLocaleString('th-TH')}</td>
+                <td className="px-4 py-3 font-semibold text-purple-600 whitespace-nowrap">
+                  {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   );
 }
 
@@ -397,71 +433,95 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
           + เพิ่มรายการ
         </button>
       </div>
-      {!rows.length ? <Empty /> : (
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead className="bg-gray-50 text-gray-400 text-xs">
-              <tr>
-                <th className="px-4 py-3 text-left font-medium">วันที่</th>
-                <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">เงินเข้า (฿)</th>
-                <th className="px-4 py-3 text-left font-medium">รายการจ่าย</th>
-                <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">ยอดจ่าย (฿)</th>
-                <th className="px-4 py-3 text-left font-medium">ยอดรวม (฿)</th>
-                <th className="px-2 py-3" />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-50">
+      {!rows.length ? <Empty /> : (() => {
+        const periodTotal = rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0);
+        return (
+          <>
+            {/* Mobile cards */}
+            <div className="divide-y divide-gray-100 sm:hidden">
               {rows.map((r, i) => {
                 const net = parseFloat(r['ยอดรวม'] || 0);
                 return (
-                  <tr key={i} className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['DATE']}</td>
-                    <td className="px-4 py-3 font-semibold text-emerald-600 whitespace-nowrap hidden sm:table-cell">
-                      {parseFloat(r['เงินเข้า'] || 0) > 0
-                        ? parseFloat(r['เงินเข้า']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3 text-gray-700">{r['รายการจ่าย'] || '—'}</td>
-                    <td className="px-4 py-3 font-semibold text-red-500 whitespace-nowrap hidden sm:table-cell">
-                      {parseFloat(r['ยอดจ่าย'] || 0) > 0
-                        ? parseFloat(r['ยอดจ่าย']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
-                        : '—'}
-                    </td>
-                    <td className={`px-4 py-3 font-bold whitespace-nowrap ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                      {net.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                    </td>
-                    <td className="px-2 py-3 whitespace-nowrap">
-                      <button onClick={() => onEdit(r)}
-                        className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="แก้ไข">
-                        ✏
-                      </button>
-                      <button onClick={() => onDelete(r)}
-                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="ลบ">
-                        🗑
-                      </button>
-                    </td>
-                  </tr>
+                  <div key={i} className="px-4 py-3 flex items-center justify-between gap-2">
+                    <div className="min-w-0">
+                      <p className="text-xs text-gray-400">{r['DATE']}</p>
+                      <p className="text-sm text-gray-700 truncate">{r['รายการจ่าย'] || '—'}</p>
+                      {parseFloat(r['เงินเข้า'] || 0) > 0 && (
+                        <p className="text-xs text-emerald-600">รับเข้า {parseFloat(r['เงินเข้า']).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</p>
+                      )}
+                      {parseFloat(r['ยอดจ่าย'] || 0) > 0 && (
+                        <p className="text-xs text-red-400">จ่าย {parseFloat(r['ยอดจ่าย']).toLocaleString('th-TH', { minimumFractionDigits: 2 })}</p>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <p className={`text-sm font-bold whitespace-nowrap ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                        {net.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+                      </p>
+                      <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600">✏</button>
+                      <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500">🗑</button>
+                    </div>
+                  </div>
                 );
               })}
-            </tbody>
-            <tfoot className="bg-gray-50 border-t-2 border-gray-200">
-              <tr>
-                <td className="px-4 py-3 text-gray-500 text-xs font-medium">รวมเดือนนี้</td>
-                <td className="hidden sm:table-cell" />
-                <td className="hidden sm:table-cell" />
-                <td className="hidden sm:table-cell" />
-                <td className={`px-4 py-3 font-bold whitespace-nowrap ${
-                  rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
-                }`}>
-                  {rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0)
-                    .toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                </td>
-                <td />
-              </tr>
-            </tfoot>
-          </table>
-        </div>
-      )}
+              <div className="px-4 py-3 bg-gray-50 flex justify-between items-center">
+                <span className="text-xs text-gray-500 font-medium">รวมเดือนนี้</span>
+                <span className={`text-sm font-bold whitespace-nowrap ${periodTotal >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                  {periodTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+                </span>
+              </div>
+            </div>
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-400 text-xs">
+                  <tr>
+                    {['วันที่', 'เงินเข้า (฿)', 'รายการจ่าย', 'ยอดจ่าย (฿)', 'ยอดรวม (฿)', ''].map(h => (
+                      <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {rows.map((r, i) => {
+                    const net = parseFloat(r['ยอดรวม'] || 0);
+                    return (
+                      <tr key={i} className="hover:bg-gray-50 transition-colors">
+                        <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['DATE']}</td>
+                        <td className="px-4 py-3 font-semibold text-emerald-600 whitespace-nowrap">
+                          {parseFloat(r['เงินเข้า'] || 0) > 0
+                            ? parseFloat(r['เงินเข้า']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
+                            : '—'}
+                        </td>
+                        <td className="px-4 py-3 text-gray-700">{r['รายการจ่าย'] || '—'}</td>
+                        <td className="px-4 py-3 font-semibold text-red-500 whitespace-nowrap">
+                          {parseFloat(r['ยอดจ่าย'] || 0) > 0
+                            ? parseFloat(r['ยอดจ่าย']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
+                            : '—'}
+                        </td>
+                        <td className={`px-4 py-3 font-bold whitespace-nowrap ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {net.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                        </td>
+                        <td className="px-2 py-3 whitespace-nowrap">
+                          <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="แก้ไข">✏</button>
+                          <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="ลบ">🗑</button>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+                  <tr>
+                    <td className="px-4 py-3 text-gray-500 text-xs font-medium" colSpan={4}>รวมเดือนนี้</td>
+                    <td className={`px-4 py-3 font-bold whitespace-nowrap ${periodTotal >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {periodTotal.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td />
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+          </>
+        );
+      })()}
     </div>
   );
 }
