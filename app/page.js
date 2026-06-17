@@ -61,9 +61,10 @@ export default function LandingPage() {
 
       <div className="fixed inset-0 overflow-hidden flex flex-col items-center justify-center">
 
-        {/* Background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src="/bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover object-top pointer-events-none" />
+        <img src="/bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover scale-110 blur-xl pointer-events-none" />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/bg.jpg" alt="" className="absolute inset-0 w-full h-full object-contain pointer-events-none" />
 
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/55" />
