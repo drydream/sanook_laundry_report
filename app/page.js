@@ -233,7 +233,7 @@ export default function Home() {
         </div>
       )}
 
-      <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
+      <header className="bg-white border-b px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="flex items-center gap-3">
           <img src="/logo.jpg" alt="logo" className="h-10 w-10 rounded-lg object-cover" />
           <div>
@@ -247,15 +247,15 @@ export default function Home() {
             value={fromDate}
             max={toDate}
             onChange={e => setFromDate(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="flex-1 sm:flex-none border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
-          <span className="text-gray-400 text-sm">–</span>
+          <span className="text-gray-400 text-sm shrink-0">–</span>
           <input
             type="date"
             value={toDate}
             min={fromDate}
             onChange={e => setToDate(e.target.value)}
-            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+            className="flex-1 sm:flex-none border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>
       </header>
@@ -280,12 +280,12 @@ export default function Home() {
           />
         </div>
 
-        <div className="flex gap-2 mb-4">
+        <div className="grid grid-cols-3 gap-2 mb-4">
           {[['payment', '💳 สลิปโอนเงิน'], ['cash', '💵 เงินหลังเครื่อง'], ['common', '🏦 เงินส่วนกลาง']].map(([key, label]) => (
             <button
               key={key}
               onClick={() => setTab(key)}
-              className={`px-4 py-2 rounded-xl text-sm font-medium transition-colors ${
+              className={`py-2 px-2 rounded-xl text-sm font-medium text-center leading-tight transition-colors ${
                 tab === key
                   ? 'bg-indigo-600 text-white'
                   : 'bg-white text-gray-600 border border-gray-200 hover:bg-gray-50'
@@ -323,18 +323,22 @@ function PaymentTable({ rows }) {
       <table className="w-full text-sm">
         <thead className="bg-gray-50 text-gray-400 text-xs">
           <tr>
-            {['วันที่', 'เวลา', 'ธนาคาร', 'ผู้รับ', 'จำนวน (฿)', 'ประเภท', 'บันทึก'].map(h => (
-              <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-            ))}
+            <th className="px-4 py-3 text-left font-medium">วันที่</th>
+            <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">เวลา</th>
+            <th className="px-4 py-3 text-left font-medium">ธนาคาร</th>
+            <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">ผู้รับ</th>
+            <th className="px-4 py-3 text-left font-medium">จำนวน (฿)</th>
+            <th className="px-4 py-3 text-left font-medium">ประเภท</th>
+            <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">บันทึก</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-50">
           {rows.map((r, i) => (
             <tr key={i} className="hover:bg-gray-50 transition-colors">
               <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['Date']}</td>
-              <td className="px-4 py-3 text-gray-500">{r['Time']}</td>
+              <td className="px-4 py-3 text-gray-500 hidden sm:table-cell">{r['Time']}</td>
               <td className="px-4 py-3 font-medium">{r['Bank Name']}</td>
-              <td className="px-4 py-3">{r['Receiver Name']}</td>
+              <td className="px-4 py-3 hidden sm:table-cell">{r['Receiver Name']}</td>
               <td className="px-4 py-3 font-semibold text-green-600 whitespace-nowrap">
                 {parseFloat(r['Amount'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
               </td>
@@ -345,7 +349,7 @@ function PaymentTable({ rows }) {
                   {r['Type'] === 'bill_payment' ? 'จ่ายบิล' : 'โอนเงิน'}
                 </span>
               </td>
-              <td className="px-4 py-3 text-gray-400">{r['Note']}</td>
+              <td className="px-4 py-3 text-gray-400 hidden sm:table-cell">{r['Note']}</td>
             </tr>
           ))}
         </tbody>
@@ -358,7 +362,7 @@ function CashTable({ rows }) {
   if (!rows.length) return <Empty />;
   return (
     <div className="overflow-x-auto">
-      <table className="w-full text-sm">
+      <table className="w-full min-w-[420px] text-sm">
         <thead className="bg-gray-50 text-gray-400 text-xs">
           <tr>
             {['วันที่', '100 บาท', '50 บาท', '20 บาท', 'รวม (฿)'].map(h => (
@@ -398,9 +402,12 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
           <table className="w-full text-sm">
             <thead className="bg-gray-50 text-gray-400 text-xs">
               <tr>
-                {['วันที่', 'เงินเข้า (฿)', 'รายการจ่าย', 'ยอดจ่าย (฿)', 'ยอดรวม (฿)', ''].map(h => (
-                  <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-                ))}
+                <th className="px-4 py-3 text-left font-medium">วันที่</th>
+                <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">เงินเข้า (฿)</th>
+                <th className="px-4 py-3 text-left font-medium">รายการจ่าย</th>
+                <th className="px-4 py-3 text-left font-medium hidden sm:table-cell">ยอดจ่าย (฿)</th>
+                <th className="px-4 py-3 text-left font-medium">ยอดรวม (฿)</th>
+                <th className="px-2 py-3" />
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
@@ -409,13 +416,13 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
                 return (
                   <tr key={i} className="hover:bg-gray-50 transition-colors">
                     <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['DATE']}</td>
-                    <td className="px-4 py-3 font-semibold text-emerald-600 whitespace-nowrap">
+                    <td className="px-4 py-3 font-semibold text-emerald-600 whitespace-nowrap hidden sm:table-cell">
                       {parseFloat(r['เงินเข้า'] || 0) > 0
                         ? parseFloat(r['เงินเข้า']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
                         : '—'}
                     </td>
                     <td className="px-4 py-3 text-gray-700">{r['รายการจ่าย'] || '—'}</td>
-                    <td className="px-4 py-3 font-semibold text-red-500 whitespace-nowrap">
+                    <td className="px-4 py-3 font-semibold text-red-500 whitespace-nowrap hidden sm:table-cell">
                       {parseFloat(r['ยอดจ่าย'] || 0) > 0
                         ? parseFloat(r['ยอดจ่าย']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
                         : '—'}
@@ -439,7 +446,10 @@ function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
             </tbody>
             <tfoot className="bg-gray-50 border-t-2 border-gray-200">
               <tr>
-                <td className="px-4 py-3 text-gray-500 text-xs font-medium" colSpan={4}>รวมเดือนนี้</td>
+                <td className="px-4 py-3 text-gray-500 text-xs font-medium">รวมเดือนนี้</td>
+                <td className="hidden sm:table-cell" />
+                <td className="hidden sm:table-cell" />
+                <td className="hidden sm:table-cell" />
                 <td className={`px-4 py-3 font-bold whitespace-nowrap ${
                   rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
                 }`}>
