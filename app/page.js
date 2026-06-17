@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import Image from 'next/image';
 
 export default function LandingPage() {
   return (
@@ -63,7 +62,8 @@ export default function LandingPage() {
       <div className="h-screen w-screen overflow-hidden relative flex flex-col items-center justify-center">
 
         {/* Background image */}
-        <Image src="/bg.jpg" alt="" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} priority />
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/bg.jpg" alt="" className="absolute inset-0 w-full h-full object-cover object-top pointer-events-none" />
 
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/55" />
