@@ -494,6 +494,10 @@ function CashTable({ rows, onAdd, onEdit, onDelete }) {
                   </div>
                   <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors">✏</button>
                   <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">🗑</button>
+                  {r['File URL'] && (
+                    <a href={r['File URL']} target="_blank" rel="noreferrer"
+                      className="text-xs text-indigo-500 hover:text-indigo-700 underline px-1">ดูรูป</a>
+                  )}
                 </div>
               </div>
             ))}
@@ -521,6 +525,10 @@ function CashTable({ rows, onAdd, onEdit, onDelete }) {
                     <td className="px-2 py-3 whitespace-nowrap">
                       <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="แก้ไข">✏</button>
                       <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="ลบ">🗑</button>
+                      {r['File URL'] && (
+                        <a href={r['File URL']} target="_blank" rel="noreferrer"
+                          className="ml-1 text-xs text-indigo-500 hover:text-indigo-700 underline">ดูรูป</a>
+                      )}
                     </td>
                   </tr>
                 ))}
