@@ -79,20 +79,20 @@ export default function LandingPage() {
         </div>
 
         {/* ── Content ── */}
-        <div className="relative z-10 w-full max-w-sm px-6 flex flex-col items-center gap-7 py-12">
+        <div className="relative z-10 w-full max-w-sm px-6 flex flex-col items-center gap-5 py-6">
 
           {/* Logo */}
           <div className="logo-float fade-up-0">
             <div className="relative">
               <div className="absolute inset-0 rounded-3xl bg-indigo-500/50 blur-2xl scale-125 animate-pulse" />
               <img src="/logo.jpg" alt="logo"
-                className="relative w-28 h-28 rounded-3xl object-cover ring-2 ring-white/20 shadow-2xl shadow-indigo-900" />
+                className="relative w-24 h-24 rounded-3xl object-cover ring-2 ring-white/20 shadow-2xl shadow-indigo-900" />
             </div>
           </div>
 
           {/* Hero text */}
           <div className="text-center fade-up-1">
-            <span className="inline-flex items-center gap-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-medium px-3 py-1 rounded-full mb-4">
+            <span className="inline-flex items-center gap-1.5 bg-indigo-500/15 border border-indigo-500/30 text-indigo-300 text-xs font-medium px-3 py-1 rounded-full mb-3">
               <span className="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-pulse inline-block" />
               ระบบรายงานการเงิน
             </span>
@@ -103,56 +103,35 @@ export default function LandingPage() {
               style={{ background: 'linear-gradient(90deg,#818cf8,#c084fc,#e879f9)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent' }}>
               ฉะเชิงเทรา
             </p>
-            <p className="text-slate-400 text-sm mt-4 leading-relaxed">
-              บันทึกสลิป · ตรวจสอบเงินสด · จัดการกองทุน<br/>เชื่อมต่อ LINE, Google Sheets และ Drive
-            </p>
           </div>
 
           {/* Feature pills */}
-          <div className="w-full flex flex-col gap-2.5 fade-up-2">
+          <div className="w-full flex flex-col gap-2 fade-up-2">
             {[
-              { icon: '💳', label: 'สลิปโอนเงิน', desc: 'บันทึกอัตโนมัติเมื่อส่งรูปใน LINE', accent: 'bg-emerald-500/10 border-emerald-500/25', dot: 'bg-emerald-400' },
-              { icon: '💵', label: 'เงินหลังเครื่อง', desc: 'สรุปธนบัตรจากตู้ซักผ้ารายวัน',    accent: 'bg-violet-500/10 border-violet-500/25',  dot: 'bg-violet-400' },
-              { icon: '🏦', label: 'เงินส่วนกลาง',   desc: 'เพิ่ม แก้ไข ลบรายการกองทุนร่วม',   accent: 'bg-indigo-500/10 border-indigo-500/25',  dot: 'bg-indigo-400' },
+              { icon: '💳', label: 'สลิปโอนเงิน',   desc: 'บันทึกอัตโนมัติเมื่อส่งรูปใน LINE', accent: 'bg-emerald-500/10 border-emerald-500/25', dot: 'bg-emerald-400' },
+              { icon: '💵', label: 'เงินหลังเครื่อง', desc: 'สรุปธนบัตรจากตู้ซักผ้ารายวัน',    accent: 'bg-violet-500/10 border-violet-500/25',  dot: 'bg-violet-400'  },
+              { icon: '🏦', label: 'เงินส่วนกลาง',   desc: 'เพิ่ม แก้ไข ลบรายการกองทุนร่วม',  accent: 'bg-indigo-500/10 border-indigo-500/25',  dot: 'bg-indigo-400'  },
             ].map(({ icon, label, desc, accent, dot }) => (
-              <div key={label} className={`glass ${accent} rounded-2xl px-4 py-3 flex items-center gap-3`}>
-                <span className="text-2xl shrink-0">{icon}</span>
+              <div key={label} className={`glass ${accent} rounded-2xl px-4 py-2.5 flex items-center gap-3`}>
+                <span className="text-xl shrink-0">{icon}</span>
                 <div className="min-w-0">
                   <div className="flex items-center gap-1.5">
                     <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
                     <p className="text-white text-sm font-semibold">{label}</p>
                   </div>
-                  <p className="text-slate-400 text-xs mt-0.5 truncate">{desc}</p>
+                  <p className="text-slate-400 text-xs truncate">{desc}</p>
                 </div>
               </div>
             ))}
           </div>
 
-          {/* Integration badges */}
-          <div className="glass rounded-2xl px-5 py-3 w-full fade-up-3">
-            <p className="text-slate-500 text-xs text-center mb-3">เชื่อมต่อกับ</p>
-            <div className="flex justify-around">
-              {[
-                { label: 'LINE', color: 'text-green-400' },
-                { label: 'Gemini', color: 'text-blue-400' },
-                { label: 'Sheets', color: 'text-emerald-400' },
-                { label: 'Drive', color: 'text-yellow-400' },
-              ].map(({ label, color }) => (
-                <div key={label} className="flex flex-col items-center gap-1">
-                  <div className={`text-xs font-bold ${color}`}>{label}</div>
-                  <div className={`w-1 h-1 rounded-full ${color.replace('text-', 'bg-')} opacity-60`} />
-                </div>
-              ))}
-            </div>
-          </div>
-
           {/* CTA */}
-          <div className="w-full fade-up-4">
+          <div className="w-full fade-up-3">
             <Link href="/dashboard"
               className="shimmer-btn block w-full py-4 rounded-2xl text-white font-bold text-lg text-center shadow-xl shadow-indigo-950 hover:brightness-110 hover:scale-[1.02] active:scale-[.97] transition-transform">
               เข้าสู่ระบบ →
             </Link>
-            <p className="text-slate-700 text-xs text-center mt-3 tracking-wide">
+            <p className="text-slate-700 text-xs text-center mt-2.5 tracking-wide">
               sanook-report.vercel.app
             </p>
           </div>
