@@ -178,7 +178,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {modal && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={e => e.target === e.currentTarget && setModal(null)}>
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl">
             <h2 className="text-base font-bold text-gray-800 mb-4">
               {modal.mode === 'add' ? 'เพิ่มรายการ' : 'แก้ไขรายการ'}
