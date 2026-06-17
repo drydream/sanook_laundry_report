@@ -36,27 +36,35 @@ async function fetchSheet(sheetName, overrideHeaders = null) {
     );
 }
 
-// Handles YYYY/MM/DD, YYYY-MM-DD, DD/MM/YYYY, M/D/YYYY → matches "YYYY-MM"
-function dateMatchesMonth(dateStr, month) {
-  if (!dateStr) return false;
-  const [targetY, targetM] = month.split('-').map(Number);
-  const s = String(dateStr);
-  // YYYY/MM/DD or YYYY-MM-DD
+// Returns [year, month] from various date string formats
+function extractYM(dateStr) {
+  const s = String(dateStr || '');
   const iso = s.match(/^(\d{4})[\/\-](\d{2})/);
-  if (iso) return +iso[1] === targetY && +iso[2] === targetM;
-  // DD/MM/YYYY (Gemini output format)
+  if (iso) return [+iso[1], +iso[2]];
   const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (dmy) return +dmy[3] === targetY && +dmy[2] === targetM;
-  // fallback: native Date parse
+  if (dmy) return [+dmy[3], +dmy[2]];
   const d = new Date(s);
-  if (!isNaN(d.getTime())) return d.getFullYear() === targetY && d.getMonth() + 1 === targetM;
-  return false;
+  if (!isNaN(d.getTime())) return [d.getFullYear(), d.getMonth() + 1];
+  return null;
+}
+
+function dateInRange(dateStr, fromMonth, toMonth) {
+  const ym = extractYM(dateStr);
+  if (!ym) return false;
+  const [fy, fm] = fromMonth.split('-').map(Number);
+  const [ty, tm] = toMonth.split('-').map(Number);
+  const v = ym[0] * 100 + ym[1];
+  return v >= fy * 100 + fm && v <= ty * 100 + tm;
 }
 
 export default function Home() {
   const [data, setData] = useState(null);
   const [tab, setTab] = useState('payment');
-  const [month, setMonth] = useState(() => {
+  const [fromMonth, setFromMonth] = useState(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [toMonth, setToMonth] = useState(() => {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
   });
@@ -69,19 +77,17 @@ export default function Home() {
     ]).then(([payment, machineCash, commonFund]) => setData({ payment, machineCash, commonFund }));
   }, []);
 
-  const monthPrefix = month.replace('-', '/');
-
   const paymentRows = useMemo(
-    () => (data?.payment || []).filter(r => String(r['Timestamp (GMT+7)']).startsWith(monthPrefix)),
-    [data, monthPrefix]
+    () => (data?.payment || []).filter(r => dateInRange(r['Timestamp (GMT+7)'], fromMonth, toMonth)),
+    [data, fromMonth, toMonth]
   );
   const cashRows = useMemo(
-    () => (data?.machineCash || []).filter(r => dateMatchesMonth(r['Date'], month)),
-    [data, month]
+    () => (data?.machineCash || []).filter(r => dateInRange(r['Date'], fromMonth, toMonth)),
+    [data, fromMonth, toMonth]
   );
   const commonFundRows = useMemo(
-    () => (data?.commonFund || []).filter(r => dateMatchesMonth(r['DATE'], month)),
-    [data, month]
+    () => (data?.commonFund || []).filter(r => dateInRange(r['DATE'], fromMonth, toMonth)),
+    [data, fromMonth, toMonth]
   );
 
   const totalPayment = paymentRows.reduce((s, r) => s + (parseFloat(r['Amount']) || 0), 0);
@@ -108,12 +114,23 @@ export default function Home() {
             <p className="text-gray-400 text-xs">ระบบรายงานการเงิน</p>
           </div>
         </div>
-        <input
-          type="month"
-          value={month}
-          onChange={e => setMonth(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
-        />
+        <div className="flex items-center gap-2">
+          <input
+            type="month"
+            value={fromMonth}
+            max={toMonth}
+            onChange={e => setFromMonth(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+          <span className="text-gray-400 text-sm">–</span>
+          <input
+            type="month"
+            value={toMonth}
+            min={fromMonth}
+            onChange={e => setToMonth(e.target.value)}
+            className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
+          />
+        </div>
       </header>
 
       <main className="max-w-5xl mx-auto px-4 py-6">
