@@ -2,14 +2,12 @@ import { NextResponse } from 'next/server';
 
 export async function POST(request) {
   const gasUrl = process.env.GAS_URL;
-  const secret = process.env.DASHBOARD_SECRET;
-  if (!gasUrl || !secret) {
+  if (!gasUrl) {
     return NextResponse.json({ error: 'not configured' }, { status: 500 });
   }
   const body = await request.json();
   const params = new URLSearchParams({
     action: body.action || '',
-    key: secret,
     date: body.date || '',
     moneyIn: String(body.moneyIn ?? ''),
     description: body.description || '',
