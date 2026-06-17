@@ -59,7 +59,7 @@ export default function LandingPage() {
         }
       `}</style>
 
-      <div className="h-screen w-screen overflow-hidden relative flex flex-col items-center justify-center">
+      <div className="fixed inset-0 overflow-hidden flex flex-col items-center justify-center">
 
         {/* Background image */}
         {/* eslint-disable-next-line @next/next/no-img-element */}
