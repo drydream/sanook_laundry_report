@@ -68,7 +68,7 @@ function fetchCommonFund() {
 }
 
 function fetchMachineCash() {
-  return fetchSheet('เงินหลังเครื่อง', ['Timestamp (GMT+7)', 'Date', '100 บาท', '50 บาท', '20 บาท', 'รวม', 'File URL']);
+  return fetchSheet('เงินหลังเครื่อง', ['Timestamp (GMT+7)', 'Date', '100 บาท', '50 บาท', '20 บาท', 'รวม', 'File URL', 'Note']);
 }
 
 export default function Home() {
@@ -88,7 +88,7 @@ export default function Home() {
   function loadAll() {
     return Promise.all([
       fetchSheet('Payment'),
-      fetchSheet('เงินหลังเครื่อง', ['Timestamp (GMT+7)', 'Date', '100 บาท', '50 บาท', '20 บาท', 'รวม', 'File URL']),
+      fetchMachineCash(),
       fetchCommonFund(),
     ]).then(([payment, machineCash, commonFund]) => setData({ payment, machineCash, commonFund }));
   }
@@ -141,7 +141,7 @@ export default function Home() {
 
   function openMachineAdd() {
     setModal({ sheet: 'machineCash', mode: 'add', row: null,
-      form: { date: todayStr(), hundred: '', fifty: '', twenty: '' } });
+      form: { date: todayStr(), hundred: '', fifty: '', twenty: '', note: '' } });
   }
 
   function openMachineEdit(r) {
@@ -151,6 +151,7 @@ export default function Home() {
         hundred: String(r['100 บาท'] || ''),
         fifty: String(r['50 บาท'] || ''),
         twenty: String(r['20 บาท'] || ''),
+        note: String(r['Note'] || ''),
       } });
   }
 
@@ -161,7 +162,7 @@ export default function Home() {
       let payload;
       if (sheet === 'machineCash') {
         payload = { action: mode === 'add' ? 'add' : 'edit', sheet: 'machineCash',
-          date: form.date, hundred: form.hundred, fifty: form.fifty, twenty: form.twenty,
+          date: form.date, hundred: form.hundred, fifty: form.fifty, twenty: form.twenty, note: form.note || '',
           ...(mode === 'edit' && { row }) };
       } else {
         payload = { action: mode === 'add' ? 'add' : 'edit',
@@ -240,6 +241,12 @@ export default function Home() {
                         .toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
                     </p>
                   </div>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">บันทึก</span>
+                    <input type="text" value={modal.form.note || ''} placeholder="—"
+                      onChange={e => setModal(m => ({ ...m, form: { ...m.form, note: e.target.value } }))}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                  </label>
                 </>
               ) : (
                 <>
@@ -446,7 +453,10 @@ function CashTable({ rows, onAdd, onEdit, onDelete }) {
           <div className="divide-y divide-gray-100 sm:hidden">
             {rows.map((r, i) => (
               <div key={i} className="px-4 py-3 flex items-center justify-between gap-2">
-                <p className="text-sm text-gray-500">{r['Date']}</p>
+                <div className="min-w-0">
+                  <p className="text-sm text-gray-500">{r['Date']}</p>
+                  {r['Note'] ? <p className="text-xs text-gray-400 truncate">{r['Note']}</p> : null}
+                </div>
                 <div className="flex items-center gap-1 shrink-0">
                   <div className="text-right">
                     <p className="text-sm font-semibold text-purple-600 whitespace-nowrap">
@@ -466,7 +476,7 @@ function CashTable({ rows, onAdd, onEdit, onDelete }) {
             <table className="w-full text-sm">
               <thead className="bg-gray-50 text-gray-400 text-xs">
                 <tr>
-                  {['วันที่', '100 บาท', '50 บาท', '20 บาท', 'รวม (฿)', ''].map(h => (
+                  {['วันที่', '100 บาท', '50 บาท', '20 บาท', 'รวม (฿)', 'บันทึก', ''].map(h => (
                     <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
                   ))}
                 </tr>
@@ -481,6 +491,7 @@ function CashTable({ rows, onAdd, onEdit, onDelete }) {
                     <td className="px-4 py-3 font-semibold text-purple-600 whitespace-nowrap">
                       {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
                     </td>
+                    <td className="px-4 py-3 text-gray-400 text-sm">{r['Note'] || '—'}</td>
                     <td className="px-2 py-3 whitespace-nowrap">
                       <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="แก้ไข">✏</button>
                       <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="ลบ">🗑</button>
