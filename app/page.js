@@ -59,7 +59,7 @@ export default function LandingPage() {
         }
       `}</style>
 
-      <div className="min-h-screen bg-[#030712] relative overflow-hidden flex flex-col items-center justify-center">
+      <div className="h-screen overflow-hidden bg-[#030712] relative flex flex-col items-center justify-center">
 
         {/* Dot grid */}
         <div className="absolute inset-0 dot-bg opacity-60" />
