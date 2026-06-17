@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function LandingPage() {
   return (
@@ -59,8 +60,10 @@ export default function LandingPage() {
         }
       `}</style>
 
-      <div className="h-screen w-screen overflow-hidden relative flex flex-col items-center justify-center"
-        style={{ backgroundImage: 'url(/bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center top' }}>
+      <div className="h-screen w-screen overflow-hidden relative flex flex-col items-center justify-center">
+
+        {/* Background image */}
+        <Image src="/bg.jpg" alt="" fill style={{ objectFit: 'cover', objectPosition: 'center top' }} priority />
 
         {/* Dark overlay */}
         <div className="absolute inset-0 bg-black/55" />
