@@ -67,6 +67,10 @@ function fetchCommonFund() {
   return fetchSheet('เงินส่วนกลาง', ['DATETIME', 'DATE', 'เงินเข้า', 'ยอดรวม', 'รายการจ่าย', 'ยอดจ่าย']);
 }
 
+function fetchMachineCash() {
+  return fetchSheet('เงินหลังเครื่อง', ['Timestamp (GMT+7)', 'Date', '100 บาท', '50 บาท', '20 บาท', 'รวม', 'File URL']);
+}
+
 export default function Home() {
   const [data, setData] = useState(null);
   const [tab, setTab] = useState('payment');
@@ -115,56 +119,85 @@ export default function Home() {
   const totalOut     = commonFundRows.reduce((s, r) => s + (parseFloat(r['ยอดจ่าย']) || 0), 0);
   const balance      = (data?.commonFund || []).reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0);
 
+  function todayStr() {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+  }
+
   function openAdd() {
-    const today = new Date();
-    setModal({
-      mode: 'add',
-      row: null,
-      form: {
-        date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
-        moneyIn: '',
-        description: '',
-        moneyOut: '',
-      },
-    });
+    setModal({ sheet: 'commonFund', mode: 'add', row: null,
+      form: { date: todayStr(), moneyIn: '', description: '', moneyOut: '' } });
   }
 
   function openEdit(r) {
-    setModal({
-      mode: 'edit',
-      row: r._row,
+    setModal({ sheet: 'commonFund', mode: 'edit', row: r._row,
       form: {
         date: String(r['DATE'] || '').replace(/\//g, '-').substring(0, 10),
         moneyIn: String(r['เงินเข้า'] || ''),
         description: String(r['รายการจ่าย'] || ''),
         moneyOut: String(r['ยอดจ่าย'] || ''),
-      },
-    });
+      } });
+  }
+
+  function openMachineAdd() {
+    setModal({ sheet: 'machineCash', mode: 'add', row: null,
+      form: { date: todayStr(), hundred: '', fifty: '', twenty: '' } });
+  }
+
+  function openMachineEdit(r) {
+    setModal({ sheet: 'machineCash', mode: 'edit', row: r._row,
+      form: {
+        date: String(r['Date'] || '').replace(/\//g, '-').substring(0, 10),
+        hundred: String(r['100 บาท'] || ''),
+        fifty: String(r['50 บาท'] || ''),
+        twenty: String(r['20 บาท'] || ''),
+      } });
   }
 
   async function handleSave() {
     setSaving(true);
     try {
-      const { mode, row, form } = modal;
-      const payload = mode === 'add'
-        ? { action: 'add', date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut }
-        : { action: 'edit', row, date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut };
+      const { mode, row, form, sheet } = modal;
+      let payload;
+      if (sheet === 'machineCash') {
+        payload = { action: mode === 'add' ? 'add' : 'edit', sheet: 'machineCash',
+          date: form.date, hundred: form.hundred, fifty: form.fifty, twenty: form.twenty,
+          ...(mode === 'edit' && { row }) };
+      } else {
+        payload = { action: mode === 'add' ? 'add' : 'edit',
+          date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut,
+          ...(mode === 'edit' && { row }) };
+      }
       const result = await callCrud(payload);
       if (result.error) { alert('เกิดข้อผิดพลาด: ' + result.error + (result.detail ? '\n\n' + result.detail : '')); return; }
-      const updated = await fetchCommonFund();
-      setData(d => ({ ...d, commonFund: updated }));
+      if (sheet === 'machineCash') {
+        setData(d => ({ ...d, machineCash: null }));
+        const updated = await fetchMachineCash();
+        setData(d => ({ ...d, machineCash: updated }));
+      } else {
+        const updated = await fetchCommonFund();
+        setData(d => ({ ...d, commonFund: updated }));
+      }
       setModal(null);
     } finally {
       setSaving(false);
     }
   }
 
-  async function handleDelete(r) {
+  async function handleDelete(r, sheet) {
     if (!confirm('ลบรายการนี้?')) return;
-    const result = await callCrud({ action: 'delete', row: r._row });
+    const payload = sheet === 'machineCash'
+      ? { action: 'delete', sheet: 'machineCash', row: r._row }
+      : { action: 'delete', row: r._row };
+    const result = await callCrud(payload);
     if (result.error) { alert('เกิดข้อผิดพลาด: ' + result.error); return; }
-    const updated = await fetchCommonFund();
-    setData(d => ({ ...d, commonFund: updated }));
+    if (sheet === 'machineCash') {
+      const updated = await fetchMachineCash();
+      setData(d => ({ ...d, machineCash: updated }));
+    } else {
+      const updated = await fetchCommonFund();
+      setData(d => ({ ...d, commonFund: updated }));
+    }
   }
 
   if (!data) {
@@ -190,34 +223,56 @@ export default function Home() {
                   onChange={e => setModal(m => ({ ...m, form: { ...m.form, date: e.target.value } }))}
                   className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
               </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs text-gray-500">เงินเข้า (฿)</span>
-                <input type="number" min="0" value={modal.form.moneyIn} placeholder="0"
-                  onChange={e => setModal(m => ({ ...m, form: { ...m.form, moneyIn: e.target.value } }))}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs text-gray-500">รายการจ่าย</span>
-                <input type="text" value={modal.form.description} placeholder="—"
-                  onChange={e => setModal(m => ({ ...m, form: { ...m.form, description: e.target.value } }))}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-              </label>
-              <label className="flex flex-col gap-1">
-                <span className="text-xs text-gray-500">ยอดจ่าย (฿)</span>
-                <input type="number" min="0" value={modal.form.moneyOut} placeholder="0"
-                  onChange={e => setModal(m => ({ ...m, form: { ...m.form, moneyOut: e.target.value } }))}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
-              </label>
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-gray-500">ยอดรวม (คำนวณอัตโนมัติ)</span>
-                <p className={`text-sm font-bold px-3 py-2 bg-gray-50 rounded-lg ${
-                  (parseFloat(modal.form.moneyIn) || 0) - (parseFloat(modal.form.moneyOut) || 0) >= 0
-                    ? 'text-emerald-600' : 'text-red-500'
-                }`}>
-                  {((parseFloat(modal.form.moneyIn) || 0) - (parseFloat(modal.form.moneyOut) || 0))
-                    .toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
-                </p>
-              </div>
+              {modal.sheet === 'machineCash' ? (
+                <>
+                  {[['hundred','100 บาท (฿)'],['fifty','50 บาท (฿)'],['twenty','20 บาท (฿)']].map(([key, label]) => (
+                    <label key={key} className="flex flex-col gap-1">
+                      <span className="text-xs text-gray-500">{label}</span>
+                      <input type="number" min="0" value={modal.form[key] || ''} placeholder="0"
+                        onChange={e => setModal(m => ({ ...m, form: { ...m.form, [key]: e.target.value } }))}
+                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                    </label>
+                  ))}
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">รวม (คำนวณอัตโนมัติ)</span>
+                    <p className="text-sm font-bold px-3 py-2 bg-gray-50 rounded-lg text-purple-600">
+                      {((parseFloat(modal.form.hundred)||0)+(parseFloat(modal.form.fifty)||0)+(parseFloat(modal.form.twenty)||0))
+                        .toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">เงินเข้า (฿)</span>
+                    <input type="number" min="0" value={modal.form.moneyIn} placeholder="0"
+                      onChange={e => setModal(m => ({ ...m, form: { ...m.form, moneyIn: e.target.value } }))}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">รายการจ่าย</span>
+                    <input type="text" value={modal.form.description} placeholder="—"
+                      onChange={e => setModal(m => ({ ...m, form: { ...m.form, description: e.target.value } }))}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                  </label>
+                  <label className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">ยอดจ่าย (฿)</span>
+                    <input type="number" min="0" value={modal.form.moneyOut} placeholder="0"
+                      onChange={e => setModal(m => ({ ...m, form: { ...m.form, moneyOut: e.target.value } }))}
+                      className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+                  </label>
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-gray-500">ยอดรวม (คำนวณอัตโนมัติ)</span>
+                    <p className={`text-sm font-bold px-3 py-2 bg-gray-50 rounded-lg ${
+                      (parseFloat(modal.form.moneyIn)||0)-(parseFloat(modal.form.moneyOut)||0) >= 0
+                        ? 'text-emerald-600' : 'text-red-500'
+                    }`}>
+                      {((parseFloat(modal.form.moneyIn)||0)-(parseFloat(modal.form.moneyOut)||0))
+                        .toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+                    </p>
+                  </div>
+                </>
+              )}
             </div>
             <div className="flex gap-2 mt-5">
               <button onClick={() => setModal(null)}
@@ -298,8 +353,8 @@ export default function Home() {
 
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           {tab === 'payment' && <PaymentTable rows={paymentRows} />}
-          {tab === 'cash'    && <CashTable rows={cashRows} />}
-          {tab === 'common'  && <CommonFundTable rows={commonFundRows} onAdd={openAdd} onEdit={openEdit} onDelete={handleDelete} />}
+          {tab === 'cash'    && <CashTable rows={cashRows} onAdd={openMachineAdd} onEdit={openMachineEdit} onDelete={r => handleDelete(r, 'machineCash')} />}
+          {tab === 'common'  && <CommonFundTable rows={commonFundRows} onAdd={openAdd} onEdit={openEdit} onDelete={r => handleDelete(r, 'commonFund')} />}
         </div>
       </main>
     </div>
@@ -377,49 +432,66 @@ function PaymentTable({ rows }) {
   );
 }
 
-function CashTable({ rows }) {
-  if (!rows.length) return <Empty />;
+function CashTable({ rows, onAdd, onEdit, onDelete }) {
   return (
     <>
-      <div className="divide-y divide-gray-100 sm:hidden">
-        {rows.map((r, i) => (
-          <div key={i} className="px-4 py-3 flex justify-between items-center gap-3">
-            <p className="text-sm text-gray-500">{r['Date']}</p>
-            <div className="text-right">
-              <p className="text-sm font-semibold text-purple-600 whitespace-nowrap">
-                {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
-              </p>
-              <p className="text-xs text-gray-400 whitespace-nowrap">
-                100฿ {Number(r['100 บาท']||0).toLocaleString()} · 50฿ {Number(r['50 บาท']||0).toLocaleString()} · 20฿ {Number(r['20 บาท']||0).toLocaleString()}
-              </p>
-            </div>
-          </div>
-        ))}
+      <div className="px-4 py-3 border-b flex justify-end">
+        <button onClick={onAdd}
+          className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          + เพิ่มรายการ
+        </button>
       </div>
-      <div className="hidden sm:block overflow-x-auto">
-        <table className="w-full text-sm">
-          <thead className="bg-gray-50 text-gray-400 text-xs">
-            <tr>
-              {['วันที่', '100 บาท', '50 บาท', '20 บาท', 'รวม (฿)'].map(h => (
-                <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-50">
+      {!rows.length ? <Empty /> : (
+        <>
+          <div className="divide-y divide-gray-100 sm:hidden">
             {rows.map((r, i) => (
-              <tr key={i} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['Date']}</td>
-                <td className="px-4 py-3">{Number(r['100 บาท'] || 0).toLocaleString('th-TH')}</td>
-                <td className="px-4 py-3">{Number(r['50 บาท'] || 0).toLocaleString('th-TH')}</td>
-                <td className="px-4 py-3">{Number(r['20 บาท'] || 0).toLocaleString('th-TH')}</td>
-                <td className="px-4 py-3 font-semibold text-purple-600 whitespace-nowrap">
-                  {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                </td>
-              </tr>
+              <div key={i} className="px-4 py-3 flex items-center justify-between gap-2">
+                <p className="text-sm text-gray-500">{r['Date']}</p>
+                <div className="flex items-center gap-1 shrink-0">
+                  <div className="text-right">
+                    <p className="text-sm font-semibold text-purple-600 whitespace-nowrap">
+                      {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+                    </p>
+                    <p className="text-xs text-gray-400 whitespace-nowrap">
+                      100฿ {Number(r['100 บาท']||0).toLocaleString()} · 50฿ {Number(r['50 บาท']||0).toLocaleString()} · 20฿ {Number(r['20 บาท']||0).toLocaleString()}
+                    </p>
+                  </div>
+                  <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors">✏</button>
+                  <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors">🗑</button>
+                </div>
+              </div>
             ))}
-          </tbody>
-        </table>
-      </div>
+          </div>
+          <div className="hidden sm:block overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 text-gray-400 text-xs">
+                <tr>
+                  {['วันที่', '100 บาท', '50 บาท', '20 บาท', 'รวม (฿)', ''].map(h => (
+                    <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {rows.map((r, i) => (
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['Date']}</td>
+                    <td className="px-4 py-3">{Number(r['100 บาท'] || 0).toLocaleString('th-TH')}</td>
+                    <td className="px-4 py-3">{Number(r['50 บาท'] || 0).toLocaleString('th-TH')}</td>
+                    <td className="px-4 py-3">{Number(r['20 บาท'] || 0).toLocaleString('th-TH')}</td>
+                    <td className="px-4 py-3 font-semibold text-purple-600 whitespace-nowrap">
+                      {parseFloat(r['รวม'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-2 py-3 whitespace-nowrap">
+                      <button onClick={() => onEdit(r)} className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="แก้ไข">✏</button>
+                      <button onClick={() => onDelete(r)} className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="ลบ">🗑</button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
+      )}
     </>
   );
 }

@@ -8,10 +8,14 @@ export async function POST(request) {
   const body = await request.json();
   const params = new URLSearchParams({
     action: body.action || '',
+    sheet: body.sheet || '',
     date: body.date || '',
     moneyIn: String(body.moneyIn ?? ''),
     description: body.description || '',
     moneyOut: String(body.moneyOut ?? ''),
+    hundred: String(body.hundred ?? ''),
+    fifty: String(body.fifty ?? ''),
+    twenty: String(body.twenty ?? ''),
     row: String(body.row ?? ''),
   });
   try {
