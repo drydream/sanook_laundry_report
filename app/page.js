@@ -36,37 +36,34 @@ async function fetchSheet(sheetName, overrideHeaders = null) {
     );
 }
 
-// Returns [year, month] from various date string formats
-function extractYM(dateStr) {
+function extractDate(dateStr) {
   const s = String(dateStr || '');
-  const iso = s.match(/^(\d{4})[\/\-](\d{2})/);
-  if (iso) return [+iso[1], +iso[2]];
+  const iso = s.match(/^(\d{4})[\/\-](\d{2})[\/\-](\d{2})/);
+  if (iso) return new Date(+iso[1], +iso[2] - 1, +iso[3]);
   const dmy = s.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})/);
-  if (dmy) return [+dmy[3], +dmy[2]];
+  if (dmy) return new Date(+dmy[3], +dmy[2] - 1, +dmy[1]);
   const d = new Date(s);
-  if (!isNaN(d.getTime())) return [d.getFullYear(), d.getMonth() + 1];
-  return null;
+  return isNaN(d.getTime()) ? null : d;
 }
 
-function dateInRange(dateStr, fromMonth, toMonth) {
-  const ym = extractYM(dateStr);
-  if (!ym) return false;
-  const [fy, fm] = fromMonth.split('-').map(Number);
-  const [ty, tm] = toMonth.split('-').map(Number);
-  const v = ym[0] * 100 + ym[1];
-  return v >= fy * 100 + fm && v <= ty * 100 + tm;
+function toInt(d) { return d.getFullYear() * 10000 + (d.getMonth() + 1) * 100 + d.getDate(); }
+
+function dateInRange(dateStr, fromDate, toDate) {
+  const d = extractDate(dateStr);
+  if (!d) return false;
+  return toInt(d) >= toInt(new Date(fromDate)) && toInt(d) <= toInt(new Date(toDate));
 }
 
 export default function Home() {
   const [data, setData] = useState(null);
   const [tab, setTab] = useState('payment');
-  const [fromMonth, setFromMonth] = useState(() => {
+  const [fromDate, setFromDate] = useState(() => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-01`;
   });
-  const [toMonth, setToMonth] = useState(() => {
+  const [toDate, setToDate] = useState(() => {
     const d = new Date();
-    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
 
   useEffect(() => {
@@ -78,16 +75,16 @@ export default function Home() {
   }, []);
 
   const paymentRows = useMemo(
-    () => (data?.payment || []).filter(r => dateInRange(r['Timestamp (GMT+7)'], fromMonth, toMonth)),
-    [data, fromMonth, toMonth]
+    () => (data?.payment || []).filter(r => dateInRange(r['Timestamp (GMT+7)'], fromDate, toDate)),
+    [data, fromDate, toDate]
   );
   const cashRows = useMemo(
-    () => (data?.machineCash || []).filter(r => dateInRange(r['Date'], fromMonth, toMonth)),
-    [data, fromMonth, toMonth]
+    () => (data?.machineCash || []).filter(r => dateInRange(r['Date'], fromDate, toDate)),
+    [data, fromDate, toDate]
   );
   const commonFundRows = useMemo(
-    () => (data?.commonFund || []).filter(r => dateInRange(r['DATE'], fromMonth, toMonth)),
-    [data, fromMonth, toMonth]
+    () => (data?.commonFund || []).filter(r => dateInRange(r['DATE'], fromDate, toDate)),
+    [data, fromDate, toDate]
   );
 
   const totalPayment = paymentRows.reduce((s, r) => s + (parseFloat(r['Amount']) || 0), 0);
@@ -116,18 +113,18 @@ export default function Home() {
         </div>
         <div className="flex items-center gap-2">
           <input
-            type="month"
-            value={fromMonth}
-            max={toMonth}
-            onChange={e => setFromMonth(e.target.value)}
+            type="date"
+            value={fromDate}
+            max={toDate}
+            onChange={e => setFromDate(e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
           <span className="text-gray-400 text-sm">–</span>
           <input
-            type="month"
-            value={toMonth}
-            min={fromMonth}
-            onChange={e => setToMonth(e.target.value)}
+            type="date"
+            value={toDate}
+            min={fromDate}
+            onChange={e => setToDate(e.target.value)}
             className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400"
           />
         </div>
