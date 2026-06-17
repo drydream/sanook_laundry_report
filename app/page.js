@@ -59,24 +59,14 @@ export default function LandingPage() {
         }
       `}</style>
 
-      <div className="h-screen overflow-hidden bg-[#030712] relative flex flex-col items-center justify-center">
+      <div className="h-screen overflow-hidden relative flex flex-col items-center justify-center"
+        style={{ backgroundImage: 'url(/bg.jpg)', backgroundSize: 'cover', backgroundPosition: 'center' }}>
 
-        {/* Dot grid */}
-        <div className="absolute inset-0 dot-bg opacity-60" />
+        {/* Dark overlay */}
+        <div className="absolute inset-0 bg-black/55" />
 
-        {/* Radial vignette */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_70%_at_50%_50%,transparent_30%,#030712_100%)]" />
-
-        {/* Animated orbs */}
-        <div className="orb-a absolute top-[-80px] right-[-60px] w-[420px] h-[420px] bg-indigo-600/30 rounded-full blur-3xl" />
-        <div className="orb-b absolute bottom-[-100px] left-[-80px] w-[480px] h-[480px] bg-violet-700/25 rounded-full blur-3xl" />
-        <div className="orb-c absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[340px] h-[340px] bg-purple-800/15 rounded-full blur-3xl" />
-
-        {/* Decorative lines */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute top-[30%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-indigo-500/20 to-transparent" />
-          <div className="absolute top-[68%] left-0 right-0 h-px bg-gradient-to-r from-transparent via-violet-500/15 to-transparent" />
-        </div>
+        {/* Bottom gradient for readability */}
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_80%_80%_at_50%_110%,rgba(0,0,0,.5)_0%,transparent_70%)]" />
 
         {/* ── Content ── */}
         <div className="relative z-10 w-full max-w-sm px-6 flex flex-col items-center gap-5 py-6">
@@ -108,18 +98,15 @@ export default function LandingPage() {
           {/* Feature pills */}
           <div className="w-full flex flex-col gap-2 fade-up-2">
             {[
-              { icon: '💳', label: 'สลิปโอนเงิน',   desc: 'บันทึกอัตโนมัติเมื่อส่งรูปใน LINE', accent: 'bg-emerald-500/10 border-emerald-500/25', dot: 'bg-emerald-400' },
-              { icon: '💵', label: 'เงินหลังเครื่อง', desc: 'สรุปธนบัตรจากตู้ซักผ้ารายวัน',    accent: 'bg-violet-500/10 border-violet-500/25',  dot: 'bg-violet-400'  },
-              { icon: '🏦', label: 'เงินส่วนกลาง',   desc: 'เพิ่ม แก้ไข ลบรายการกองทุนร่วม',  accent: 'bg-indigo-500/10 border-indigo-500/25',  dot: 'bg-indigo-400'  },
-            ].map(({ icon, label, desc, accent, dot }) => (
-              <div key={label} className={`glass ${accent} rounded-2xl px-4 py-2.5 flex items-center gap-3`}>
+              { icon: '💳', label: 'สลิปโอนเงิน',   accent: 'bg-emerald-500/10 border-emerald-500/25', dot: 'bg-emerald-400' },
+              { icon: '💵', label: 'เงินหลังเครื่อง', accent: 'bg-violet-500/10 border-violet-500/25',  dot: 'bg-violet-400'  },
+              { icon: '🏦', label: 'เงินส่วนกลาง',   accent: 'bg-indigo-500/10 border-indigo-500/25',  dot: 'bg-indigo-400'  },
+            ].map(({ icon, label, accent, dot }) => (
+              <div key={label} className={`glass ${accent} rounded-2xl px-4 py-3 flex items-center gap-3`}>
                 <span className="text-xl shrink-0">{icon}</span>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
-                    <p className="text-white text-sm font-semibold">{label}</p>
-                  </div>
-                  <p className="text-slate-400 text-xs truncate">{desc}</p>
+                <div className="flex items-center gap-1.5">
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dot}`} />
+                  <p className="text-white text-sm font-semibold">{label}</p>
                 </div>
               </div>
             ))}
@@ -131,9 +118,6 @@ export default function LandingPage() {
               className="shimmer-btn block w-full py-4 rounded-2xl text-white font-bold text-lg text-center shadow-xl shadow-indigo-950 hover:brightness-110 hover:scale-[1.02] active:scale-[.97] transition-transform">
               เข้าสู่ระบบ →
             </Link>
-            <p className="text-slate-700 text-xs text-center mt-2.5 tracking-wide">
-              sanook-report.vercel.app
-            </p>
           </div>
 
         </div>
