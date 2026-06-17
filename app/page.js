@@ -3,8 +3,6 @@ import { useState, useEffect, useMemo } from 'react';
 
 const SHEET_ID = '1w9ZuQED5dRuQsjbR2UtQ5tzO0hw4YBzsHFo-g5jxcpo';
 
-// gviz raw date value looks like "Date(2026,5,17)" or "Date(2026,5,17,10,30,0)"
-// month is zero-indexed → add 1; reformat to "YYYY/MM/DD HH:MM"
 function gvizDateStr(v, type) {
   const m = String(v ?? '').match(/Date\((\d+),(\d+),(\d+)(?:,(\d+),(\d+))?/);
   if (!m) return '';
@@ -23,17 +21,19 @@ async function fetchSheet(sheetName, overrideHeaders = null) {
   const json = JSON.parse(match[1]);
   if (!json.table?.cols?.length) return [];
   return (json.table.rows || [])
-    .filter(row => row.c?.some(cell => cell?.v != null))
-    .map(row =>
-      Object.fromEntries(json.table.cols.map((col, i) => {
+    .map((row, rawIdx) => ({ row, rawIdx }))
+    .filter(({ row }) => row.c?.some(cell => cell?.v != null))
+    .map(({ row, rawIdx }) => ({
+      ...Object.fromEntries(json.table.cols.map((col, i) => {
         const cell = row.c[i];
         const label = overrideHeaders ? (overrideHeaders[i] ?? col.label) : col.label;
         const val = (col.type === 'date' || col.type === 'datetime')
           ? gvizDateStr(cell?.v, col.type)
           : (cell?.v ?? '');
         return [label, val];
-      }))
-    );
+      })),
+      _row: rawIdx + 2,
+    }));
 }
 
 function extractDate(dateStr) {
@@ -54,6 +54,19 @@ function dateInRange(dateStr, fromDate, toDate) {
   return toInt(d) >= toInt(new Date(fromDate)) && toInt(d) <= toInt(new Date(toDate));
 }
 
+async function callCrud(payload) {
+  const res = await fetch('/api/crud', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  return res.json();
+}
+
+function fetchCommonFund() {
+  return fetchSheet('เงินส่วนกลาง', ['DATETIME', 'DATE', 'เงินเข้า', 'ยอดรวม', 'รายการจ่าย', 'ยอดจ่าย']);
+}
+
 export default function Home() {
   const [data, setData] = useState(null);
   const [tab, setTab] = useState('payment');
@@ -65,12 +78,14 @@ export default function Home() {
     const d = new Date();
     return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
   });
+  const [modal, setModal] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     Promise.all([
       fetchSheet('Payment'),
       fetchSheet('เงินหลังเครื่อง', ['Timestamp (GMT+7)', 'Date', '100 บาท', '50 บาท', '20 บาท', 'รวม', 'File URL']),
-      fetchSheet('เงินส่วนกลาง', ['DATETIME', 'DATE', 'เงินเข้า', 'ยอดรวม', 'รายการจ่าย', 'ยอดจ่าย']),
+      fetchCommonFund(),
     ]).then(([payment, machineCash, commonFund]) => setData({ payment, machineCash, commonFund }));
   }, []);
 
@@ -93,6 +108,58 @@ export default function Home() {
   const totalOut     = commonFundRows.reduce((s, r) => s + (parseFloat(r['ยอดจ่าย']) || 0), 0);
   const balance      = (data?.commonFund || []).reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0);
 
+  function openAdd() {
+    const today = new Date();
+    setModal({
+      mode: 'add',
+      row: null,
+      form: {
+        date: `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`,
+        moneyIn: '',
+        description: '',
+        moneyOut: '',
+      },
+    });
+  }
+
+  function openEdit(r) {
+    setModal({
+      mode: 'edit',
+      row: r._row,
+      form: {
+        date: String(r['DATE'] || '').replace(/\//g, '-').substring(0, 10),
+        moneyIn: String(r['เงินเข้า'] || ''),
+        description: String(r['รายการจ่าย'] || ''),
+        moneyOut: String(r['ยอดจ่าย'] || ''),
+      },
+    });
+  }
+
+  async function handleSave() {
+    setSaving(true);
+    try {
+      const { mode, row, form } = modal;
+      const payload = mode === 'add'
+        ? { action: 'add', date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut }
+        : { action: 'edit', row, date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut };
+      const result = await callCrud(payload);
+      if (result.error) { alert('เกิดข้อผิดพลาด: ' + result.error); return; }
+      const updated = await fetchCommonFund();
+      setData(d => ({ ...d, commonFund: updated }));
+      setModal(null);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  async function handleDelete(r) {
+    if (!confirm('ลบรายการนี้?')) return;
+    const result = await callCrud({ action: 'delete', row: r._row });
+    if (result.error) { alert('เกิดข้อผิดพลาด: ' + result.error); return; }
+    const updated = await fetchCommonFund();
+    setData(d => ({ ...d, commonFund: updated }));
+  }
+
   if (!data) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -103,6 +170,62 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {modal && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50" onClick={e => e.target === e.currentTarget && setModal(null)}>
+          <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4 shadow-xl">
+            <h2 className="text-base font-bold text-gray-800 mb-4">
+              {modal.mode === 'add' ? 'เพิ่มรายการ' : 'แก้ไขรายการ'}
+            </h2>
+            <div className="flex flex-col gap-3">
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-gray-500">วันที่</span>
+                <input type="date" value={modal.form.date}
+                  onChange={e => setModal(m => ({ ...m, form: { ...m.form, date: e.target.value } }))}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-gray-500">เงินเข้า (฿)</span>
+                <input type="number" min="0" value={modal.form.moneyIn} placeholder="0"
+                  onChange={e => setModal(m => ({ ...m, form: { ...m.form, moneyIn: e.target.value } }))}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-gray-500">รายการจ่าย</span>
+                <input type="text" value={modal.form.description} placeholder="—"
+                  onChange={e => setModal(m => ({ ...m, form: { ...m.form, description: e.target.value } }))}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              </label>
+              <label className="flex flex-col gap-1">
+                <span className="text-xs text-gray-500">ยอดจ่าย (฿)</span>
+                <input type="number" min="0" value={modal.form.moneyOut} placeholder="0"
+                  onChange={e => setModal(m => ({ ...m, form: { ...m.form, moneyOut: e.target.value } }))}
+                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+              </label>
+              <div className="flex flex-col gap-1">
+                <span className="text-xs text-gray-500">ยอดรวม (คำนวณอัตโนมัติ)</span>
+                <p className={`text-sm font-bold px-3 py-2 bg-gray-50 rounded-lg ${
+                  (parseFloat(modal.form.moneyIn) || 0) - (parseFloat(modal.form.moneyOut) || 0) >= 0
+                    ? 'text-emerald-600' : 'text-red-500'
+                }`}>
+                  {((parseFloat(modal.form.moneyIn) || 0) - (parseFloat(modal.form.moneyOut) || 0))
+                    .toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
+                </p>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-5">
+              <button onClick={() => setModal(null)}
+                className="flex-1 px-4 py-2 rounded-xl text-sm border border-gray-200 text-gray-600 hover:bg-gray-50">
+                ยกเลิก
+              </button>
+              <button onClick={handleSave} disabled={saving}
+                className="flex-1 px-4 py-2 rounded-xl text-sm bg-indigo-600 text-white hover:bg-indigo-700 disabled:opacity-50">
+                {saving ? 'กำลังบันทึก...' : 'บันทึก'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <header className="bg-white border-b px-6 py-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <img src="/logo.jpg" alt="logo" className="h-10 w-10 rounded-lg object-cover" />
@@ -169,7 +292,7 @@ export default function Home() {
         <div className="bg-white rounded-2xl shadow-sm border overflow-hidden">
           {tab === 'payment' && <PaymentTable rows={paymentRows} />}
           {tab === 'cash'    && <CashTable rows={cashRows} />}
-          {tab === 'common'  && <CommonFundTable rows={commonFundRows} />}
+          {tab === 'common'  && <CommonFundTable rows={commonFundRows} onAdd={openAdd} onEdit={openEdit} onDelete={handleDelete} />}
         </div>
       </main>
     </div>
@@ -254,54 +377,74 @@ function CashTable({ rows }) {
   );
 }
 
-function CommonFundTable({ rows }) {
-  if (!rows.length) return <Empty />;
+function CommonFundTable({ rows, onAdd, onEdit, onDelete }) {
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full text-sm">
-        <thead className="bg-gray-50 text-gray-400 text-xs">
-          <tr>
-            {['วันที่', 'เงินเข้า (฿)', 'รายการจ่าย', 'ยอดจ่าย (฿)', 'ยอดรวม (฿)'].map(h => (
-              <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-gray-50">
-          {rows.map((r, i) => {
-            const net = parseFloat(r['ยอดรวม'] || 0);
-            return (
-              <tr key={i} className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['DATE']}</td>
-                <td className="px-4 py-3 font-semibold text-emerald-600 whitespace-nowrap">
-                  {parseFloat(r['เงินเข้า'] || 0) > 0
-                    ? parseFloat(r['เงินเข้า']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
-                    : '—'}
-                </td>
-                <td className="px-4 py-3 text-gray-700">{r['รายการจ่าย'] || '—'}</td>
-                <td className="px-4 py-3 font-semibold text-red-500 whitespace-nowrap">
-                  {parseFloat(r['ยอดจ่าย'] || 0) > 0
-                    ? parseFloat(r['ยอดจ่าย']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
-                    : '—'}
-                </td>
-                <td className={`px-4 py-3 font-bold whitespace-nowrap ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
-                  {net.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-                </td>
+    <div>
+      <div className="px-4 py-3 border-b flex justify-end">
+        <button onClick={onAdd}
+          className="px-3 py-1.5 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+          + เพิ่มรายการ
+        </button>
+      </div>
+      {!rows.length ? <Empty /> : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead className="bg-gray-50 text-gray-400 text-xs">
+              <tr>
+                {['วันที่', 'เงินเข้า (฿)', 'รายการจ่าย', 'ยอดจ่าย (฿)', 'ยอดรวม (฿)', ''].map(h => (
+                  <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
+                ))}
               </tr>
-            );
-          })}
-        </tbody>
-        <tfoot className="bg-gray-50 border-t-2 border-gray-200">
-          <tr>
-            <td className="px-4 py-3 text-gray-500 text-xs font-medium" colSpan={4}>รวมเดือนนี้</td>
-            <td className={`px-4 py-3 font-bold whitespace-nowrap ${
-              rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
-            }`}>
-              {rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0)
-                .toLocaleString('th-TH', { minimumFractionDigits: 2 })}
-            </td>
-          </tr>
-        </tfoot>
-      </table>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {rows.map((r, i) => {
+                const net = parseFloat(r['ยอดรวม'] || 0);
+                return (
+                  <tr key={i} className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-gray-500 whitespace-nowrap">{r['DATE']}</td>
+                    <td className="px-4 py-3 font-semibold text-emerald-600 whitespace-nowrap">
+                      {parseFloat(r['เงินเข้า'] || 0) > 0
+                        ? parseFloat(r['เงินเข้า']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
+                        : '—'}
+                    </td>
+                    <td className="px-4 py-3 text-gray-700">{r['รายการจ่าย'] || '—'}</td>
+                    <td className="px-4 py-3 font-semibold text-red-500 whitespace-nowrap">
+                      {parseFloat(r['ยอดจ่าย'] || 0) > 0
+                        ? parseFloat(r['ยอดจ่าย']).toLocaleString('th-TH', { minimumFractionDigits: 2 })
+                        : '—'}
+                    </td>
+                    <td className={`px-4 py-3 font-bold whitespace-nowrap ${net >= 0 ? 'text-emerald-600' : 'text-red-500'}`}>
+                      {net.toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                    </td>
+                    <td className="px-2 py-3 whitespace-nowrap">
+                      <button onClick={() => onEdit(r)}
+                        className="p-1.5 text-gray-400 hover:text-indigo-600 transition-colors" title="แก้ไข">
+                        ✏
+                      </button>
+                      <button onClick={() => onDelete(r)}
+                        className="p-1.5 text-gray-400 hover:text-red-500 transition-colors" title="ลบ">
+                        🗑
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+            <tfoot className="bg-gray-50 border-t-2 border-gray-200">
+              <tr>
+                <td className="px-4 py-3 text-gray-500 text-xs font-medium" colSpan={4}>รวมเดือนนี้</td>
+                <td className={`px-4 py-3 font-bold whitespace-nowrap ${
+                  rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0) >= 0 ? 'text-emerald-600' : 'text-red-500'
+                }`}>
+                  {rows.reduce((s, r) => s + (parseFloat(r['ยอดรวม']) || 0), 0)
+                    .toLocaleString('th-TH', { minimumFractionDigits: 2 })}
+                </td>
+                <td />
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      )}
     </div>
   );
 }
