@@ -402,7 +402,7 @@ function PaymentTable({ rows }) {
               <p className="text-sm font-medium text-gray-800 truncate">{r['Bank Name']}</p>
               <p className="text-xs text-gray-400 truncate">{r['Receiver Name']}</p>
             </div>
-            <div className="text-right shrink-0">
+            <div className="text-right shrink-0 flex flex-col items-end gap-1">
               <p className="text-sm font-semibold text-green-600 whitespace-nowrap">
                 {parseFloat(r['Amount'] || 0).toLocaleString('th-TH', { minimumFractionDigits: 2 })} ฿
               </p>
@@ -411,6 +411,12 @@ function PaymentTable({ rows }) {
               }`}>
                 {r['Type'] === 'bill_payment' ? 'จ่ายบิล' : 'โอนเงิน'}
               </span>
+              {r['File URL'] && (
+                <a href={r['File URL']} target="_blank" rel="noreferrer"
+                  className="text-xs text-indigo-500 hover:text-indigo-700 underline">
+                  ดูสลิป
+                </a>
+              )}
             </div>
           </div>
         ))}
@@ -419,7 +425,7 @@ function PaymentTable({ rows }) {
         <table className="w-full text-sm">
           <thead className="bg-gray-50 text-gray-400 text-xs">
             <tr>
-              {['วันที่', 'เวลา', 'ธนาคาร', 'ผู้รับ', 'จำนวน (฿)', 'ประเภท', 'บันทึก'].map(h => (
+              {['วันที่', 'เวลา', 'ธนาคาร', 'ผู้รับ', 'จำนวน (฿)', 'ประเภท', 'บันทึก', ''].map(h => (
                 <th key={h} className="px-4 py-3 text-left font-medium">{h}</th>
               ))}
             </tr>
@@ -442,6 +448,14 @@ function PaymentTable({ rows }) {
                   </span>
                 </td>
                 <td className="px-4 py-3 text-gray-400">{r['Note']}</td>
+                <td className="px-4 py-3">
+                  {r['File URL'] && (
+                    <a href={r['File URL']} target="_blank" rel="noreferrer"
+                      className="text-xs text-indigo-500 hover:text-indigo-700 underline whitespace-nowrap">
+                      ดูสลิป
+                    </a>
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>
