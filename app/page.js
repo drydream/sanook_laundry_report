@@ -81,12 +81,19 @@ export default function Home() {
   const [modal, setModal] = useState(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
-    Promise.all([
+  function loadAll() {
+    return Promise.all([
       fetchSheet('Payment'),
       fetchSheet('เงินหลังเครื่อง', ['Timestamp (GMT+7)', 'Date', '100 บาท', '50 บาท', '20 บาท', 'รวม', 'File URL']),
       fetchCommonFund(),
     ]).then(([payment, machineCash, commonFund]) => setData({ payment, machineCash, commonFund }));
+  }
+
+  useEffect(() => {
+    loadAll();
+    const onFocus = () => loadAll();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
   }, []);
 
   const paymentRows = useMemo(
