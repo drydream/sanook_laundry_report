@@ -143,7 +143,7 @@ export default function Home() {
         ? { action: 'add', date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut }
         : { action: 'edit', row, date: form.date, moneyIn: form.moneyIn, description: form.description, moneyOut: form.moneyOut };
       const result = await callCrud(payload);
-      if (result.error) { alert('เกิดข้อผิดพลาด: ' + result.error); return; }
+      if (result.error) { alert('เกิดข้อผิดพลาด: ' + result.error + (result.detail ? '\n\n' + result.detail : '')); return; }
       const updated = await fetchCommonFund();
       setData(d => ({ ...d, commonFund: updated }));
       setModal(null);
